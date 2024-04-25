@@ -1,0 +1,727 @@
+DL Assignment - 01
+Problem Statement: Linear regression by using Deep Neural network
+Implement Boston housing price prediction problem by Linear regression using Deep Neural network. Use Boston House price prediction dataset.
+
+# Import Libraries
+from sklearn.datasets import fetch_openml
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+%matplotlib inline
+
+#ignore warnings
+import warnings
+warnings.filterwarnings('ignore')
+
+ # read data from sklearn data set
+data = fetch_openml(name='boston', version=1)
+df=pd.DataFrame(data.data,columns=data.feature_names)
+df['price']=data.target
+df
+
+df.info()
+
+df.isnull().sum()
+
+ df.describe()
+
+ df.shape
+
+ #univariate EDA
+fig = plt.figure(figsize = (10,10))
+df.boxplot()
+
+sns.boxplot(df["RM"])
+
+plt.hist(df["RM"])
+
+ df["RM"].value_counts()
+
+#bivariate EDA
+sns.scatterplot(df["LSTAT"])
+
+sns.scatterplot(df["price"])
+
+ sns.scatterplot(df["RM"])
+
+ sns.scatterplot(df["price"])
+
+ #Multivariate EDA
+fig = plt.subplots(figsize = (10,10))
+sns.heatmap(df.corr(),annot = True, cmap = "Blues")
+
+import tensorflow.keras as tk
+
+model = tk.Sequential()
+
+ #adding input layer
+model.add(tk.layers.Input(shape=(13,)))
+
+ #adding first hidden layer
+model.add(tk.layers.Dense(units=6, activation="relu", kernel_initializer="he_uniform"))
+
+ #adding second hidden layer
+model.add(tk.layers.Dense(units=6, activation="relu", kernel_initializer="he_uniform"))
+
+ #adding output layer
+model.add(tk.layers.Dense(units=1, activation="relu", kernel_initializer="he_uniform"))
+
+ #compiling the model
+model.compile(optimizer="adam", loss="mean_absolute_error")
+
+ model.summary()
+
+df.head()
+x = df.iloc[:,:-1] #independent
+display(x)
+y = df['price'] #dependent
+display(y)
+
+ from sklearn.model_selection import train_test_split
+xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=0.2, random_state=10)
+
+ #training the model
+import time
+start = time.time()
+
+xtrain = np.asarray(xtrain).astype(np.int)
+ytrain = np.asarray(ytrain).astype(np.int)
+xtest = np.asarray(xtest).astype(np.int)
+ytest = np.asarray(ytest).astype(np.int)
+
+obj1 = model.fit(
+x=xtrain,
+y=ytrain,
+epochs=50,
+batch_size=64,
+validation_data=(xtest,ytest))
+
+ypred = model.predict([[0.00632,18.0,2.31,0.0,0.538,6.575,65.2,4.0900,1.0,296.0,15.3,396.90,4.98]])
+ypred
+
+ ypred1 = model.predict(xtest)
+display(ypred1,ytest)
+ypred1.shape, ytest.shape
+
+ from sklearn.metrics import mean_absolute_error
+error = mean_absolute_error(ytest, ypred1)
+error
+
+plt.figure(figsize=(10,10))
+ax1 = sns.distplot(ytest, hist=False, color="r", label="Actual Value")
+sns.distplot(ypred1, hist=False, color="b", label="Predicted Values", ax=ax1)
+
+
+DL Assignment - 02
+ Implement Classification using Artificial Neural Network
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+import warnings
+warnings.filterwarnings("ignore")
+
+ df=pd.read_csv("IMDB Dataset.csv")
+df1=df.head(10)
+df1
+
+ df.info()
+
+df.isnull().sum()
+
+df.sentiment.value_counts()
+
+ df.review.value_counts().head(2)
+
+# checking how many duplicate valu there are?
+df.duplicated().value_counts()
+
+ data=df.sample(10000)
+data
+
+data.drop_duplicates(inplace=True)
+
+ data.duplicated().value_counts()
+
+pip install nltk
+
+ import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+from bs4 import BeautifulSoup
+nltk.download('stopwords')
+
+# function to clean whole text
+def clean_review(review, stemmer = PorterStemmer(), stop_words =set(stopwords.words("english"))):
+#removing html tags from reviews
+soup = BeautifulSoup(review, "html.parser")
+no_html_review = soup.get_text().lower()
+# empty list for adding clean words
+clean_text = []
+# cleaning stopwords and not alpha characters
+for word in review.split():
+if word not in stop_words and word.isalpha():
+clean_text.append(stemmer.stem(word))
+return " ".join(clean_text)
+
+data.review = data.review.apply(clean_review)
+
+#checking the clean review in specific locaion
+data.review.iloc[3537]
+
+#how the data looks like now
+data
+
+ # verctorizing reviews
+#import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+# setting max_features to 5000 to get most repeated 5000 words in reviews
+cv = CountVectorizer(max_features=300,ngram_range=(1,4))
+
+ # Fitting countvectorizer in data.review and getting X for ML
+X = cv.fit_transform(data.review).toarray()
+x1 = pd.DataFrame(X, columns = cv.get_feature_names_out())
+x1
+
+ x1.shape
+
+#Importing label encoder
+from sklearn.preprocessing import LabelEncoder
+lb = LabelEncoder()
+# positive = 1, negative = 0
+data.sentiment = lb.fit_transform(data.sentiment)
+
+ data.sentiment
+
+y=data.sentiment
+
+ y.shape
+
+ from sklearn.model_selection import train_test_split
+# converting X, y into train test split
+xtrain, xtest, ytrain, ytest = train_test_split(x1, y, test_size=0.2, random_state=42)
+
+ ytrain.shape
+
+ import tensorflow.keras as tk
+
+model = tk.Sequential()
+model.add(tk.layers.Input(shape=(300,)))
+model.add(tk.layers.Dense(50, activation='relu',kernel_initializer="he_uniform"))
+model.add(tk.layers.Dense(1, activation='sigmoid',kernel_initializer="he_uniform"))
+model.summary()
+
+model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+obj1=model.fit(x=xtrain,y=ytrain,epochs=80,batch_size=64,validation_data=(xtest,ytest))
+
+y_pred=model.predict(xtest)
+
+ y_pred
+
+from sklearn.metrics import accuracy_score
+accuracy=accuracy_score(ytest,y_pred.round())
+
+ accuracy
+
+DL Assignment - 03
+Implement Classification using Convolution Neural Network.
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from keras.datasets import fashion_mnist
+import tensorflow.keras as tk
+
+%matplotlib inline
+
+(x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+
+ display(x_train.shape,x_test.shape)
+
+figure=plt.figure(figsize=(20,20))
+for i in range(1,200):
+plt.subplot(20,10,i)
+plt.imshow(x_train[i],cmap=plt.get_cmap('BrBG_r'))
+plt.show()
+
+ cnn_model = tk.Sequential()
+cnn_model.add(tk.layers.Conv2D(32,3,3,input_shape = (28,28,1),activation = 'relu'))
+# Max pooling will reduce the
+# size with a kernal size of 2x2
+cnn_model.add(tk.layers.MaxPooling2D(pool_size= (2,2)))
+# Once the convolutional and pooling
+# operations are done the layer
+# is flattened and fully connected layers
+# are added
+cnn_model.add(tk.layers.Flatten())
+cnn_model.add(tk.layers.Dense(32,activation = 'relu'))
+cnn_model.add(tk.layers.Dense(10,activation = 'softmax'))
+
+cnn_model.compile(optimizer='Adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+
+cnn_model.fit(x=x_train,y=y_train,batch_size =512,epochs = 50,verbose= 1,validation_data = (x_test,y_test))
+
+evaluation = cnn_model.evaluate(x_test,y_test)
+print('Test Accuracy : {:.3f}'.format(evaluation[1]))
+
+ predicted_classes = np.argmax(cnn_model.predict(x_test),axis=-1)
+
+predicted_classes
+
+ L = 10
+W = 10
+fig,axes = plt.subplots(L,W,figsize = (20,20))
+axes = axes.ravel()
+for i in np.arange(0,L*W):
+axes[i].imshow(x_test[i].reshape(28,28))
+axes[i].set_title('Prediction Class:{1} \n true class: {1}'.format(predicted_classes[i], y_test[i]))
+axes[i].axis('off')
+plt.subplots_adjust(wspace = 0.75)
+
+DL Assignment - 04
+Implement Google stock price prediction using Recurrent Neural Network
+
+#import Libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+ # read Dataset
+df_train=pd.read_csv("Google_Stock_Price_Train.csv")
+df_train.head(10)
+
+#keras only takes numpy array
+#will use Open price for prediction so we need to make it NumPy array
+training_set = df_train.iloc[:, 1: 2].values
+training_set
+
+#scale the stock prices between (0, 1) to avoid intensive computation.
+from sklearn.preprocessing import MinMaxScaler
+sc= MinMaxScaler()
+training_set=sc.fit_transform(training_set)
+training_set
+
+x_train= training_set[0:1257]
+y_train= training_set[1:1258]
+display(x_train.shape, y_train.shape)
+
+ x_train=np.reshape(x_train, (1257 , 1 , 1))
+
+ x_train.shape
+
+df_test=pd.read_csv("Google_Stock_Price_Test.csv")
+df_test
+
+ figure=plt.figure(figsize=(10,10))
+plt.subplots_adjust(top=1.35, bottom=1.2)
+df_train['Open'].plot()
+plt.ylabel('Open')
+plt.xlabel(None)
+plt.title(f"Sales Open")
+
+ testing_set = df_test.iloc[:, 1: 2].values
+testing_set
+
+ testing_set=sc.fit_transform(testing_set)
+testing_set.shape
+
+x_test= testing_set[0:20]
+y_test= testing_set[0:20]
+#display(x_test, y_test)
+y_test.shape
+
+x_test=np.reshape(x_test, (20 , 1 , 1))
+
+x_test.shape
+
+ import tensorflow.keras as tk
+
+ model = tk.Sequential()
+model.add(tk.layers.LSTM(units=5, activation= 'sigmoid', input_shape=(None,1)))
+model.add(tk.layers.Dense( units=1 ))
+model.compile(optimizer='adam', loss='mean_squared_error')
+model.fit(x_train, y_train, batch_size=32, epochs=50,validation_data=(x_test,y_test))
+
+y_pred=model.predict(x_test)
+
+plt.plot( y_test , color = 'red' , label = 'Real Google Stock Price')
+plt.plot( y_pred , color = 'blue' , label = 'Predicted Google Stock Price')
+plt.title('Google Stock Price Prediction')
+plt.xlabel( 'time' )
+plt.ylabel( 'Google Stock Price' )
+plt.legend()
+plt.show()
+
+HPC Assignment - 01
+BFS
+#include <iostream>
+#include <stdlib.h>
+#include <omp.h>
+#include <queue>
+
+using namespace std;
+
+class node {
+public:
+    node *left, *right;
+    int data;
+};
+
+class Breadthfs {
+public:
+    node* insert(node*, int);
+    void bfs(node*);
+};
+
+node* Breadthfs::insert(node* root, int data) {
+    if (!root) {
+        root = new node;
+        root -> left = NULL;
+        root -> right = NULL;
+        root -> data = data;
+        return root;
+    }
+    queue<node*> q;
+    q.push(root);
+
+    while (!q.empty())
+    {
+        node* temp = q.front();
+        q.pop();
+
+        if (temp -> left == NULL) {
+            temp -> left = new node;
+            temp -> left -> left = NULL;
+            temp -> left -> right = NULL;
+            temp -> left -> data = data;
+            return root;
+        }
+        else {
+            q.push(temp -> left);
+        }
+        if (temp -> right == NULL) {
+            temp -> right = new node;
+            temp -> right-> left = NULL;
+            temp -> right-> right = NULL;
+            temp -> right-> data = data;
+            return root;
+        }
+        else {
+            q.push(temp -> right);
+        }
+    }
+}
+
+void Breadthfs::bfs(node* head) {
+    queue<node*> q;
+    q.push(head);
+    int qSize;
+
+    while (!q.empty()) {
+        qSize = q.size();
+
+#pragma omp parallel for 
+        // creates parallel threads
+        for (int i = 0; i < qSize; i++) {
+            node *currNode;
+#pragma omp critical
+	    {
+		currNode = q.front();
+		q.pop();
+		cout << "\t" << currNode->data;
+	    } // prints parent node
+#pragma omp critical
+	    if (currNode -> left) // push parent's left node in queue
+		q.push(currNode -> left);
+	    if (currNode -> right)
+		q.push(currNode -> right);
+	} // push parent's right node in queue
+    }
+}
+
+int main(void) {
+    node* root = NULL;
+    int data;
+    char ans;
+
+    do {
+        cout << "\nEnter Data => ";
+        cin >> data;
+        root = Breadthfs().insert(root, data);
+        cout << "Do you want insert one more node?\nEnter Choice (y/n): ";
+        cin >> ans;
+    } while (ans == 'y' || ans == 'Y');
+
+    Breadthfs().bfs(root);
+    cout << endl;
+    
+    return 0;
+} 
+
+
+DFS
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <omp.h>
+using namespace std;
+
+const int MAX = 100000;
+vector<int> graph[MAX];
+bool visited[MAX];
+
+void dfs(int node) {
+    stack<int> s;
+    s.push(node);
+
+    while (!s.empty()) {
+        int curr_node = s.top();
+
+        if (!visited[curr_node]) {
+            visited[curr_node] = true;
+            s.pop();
+            cout << curr_node << " ";
+
+#pragma omp parallel for
+            for (int i = 0; i < graph[curr_node].size(); i++) {
+                int adj_node = graph[curr_node][i];
+                if (!visited[adj_node]) {
+                    s.push(adj_node);
+                }
+            }
+        }
+    }
+}
+
+int main(void) {
+    int n, m, start_node;
+
+    cout << "Enter No. of Nodes, No. of Edges and Starting Node of Graph:\n";
+    cin >> n >> m >> start_node;	// n: node,m:edges
+    cout << "Enter pair of node and edges:\n";
+
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;		// u and v: Pair of edges
+        graph[u].push_back(v);
+        graph[v].push_back(u);
+    }
+    
+#pragma omp parallel for
+    for (int i = 0; i < n; i++) {
+        visited[i] = false;
+    }
+
+    dfs(start_node);
+
+    return 0;
+}
+
+HPC Assignment - 02
+Bubble Sort
+#include <iostream>
+#include <vector>
+#include <omp.h>
+
+void bubble_sort_odd_even(std::vector<int> &arr) {
+    bool isSorted = false;
+    while (!isSorted) {
+        isSorted = true;
+
+#pragma omp parallel for
+        for (int i = 0; i < arr.size() - 1; i += 2) {
+            if (arr[i] > arr[i + 1]) {
+		std::swap(arr[i], arr[i + 1]);
+                isSorted = false;
+            }
+        }
+
+#pragma omp parallel for
+        for (int i = 1; i < arr.size() - 1; i += 2) {
+            if (arr[i] > arr[i + 1]) {
+		std::swap(arr[i], arr[i + 1]);
+                isSorted = false;
+            }
+        }
+    }
+}
+
+int main(void) {
+    std::vector<int> arr = {5, 2, 9, 1, 7, 6, 8, 3, 4};
+    double start = 0, end = 0;
+    
+    // Measure performance of parallel bubble sort using odd even transposition
+    start = omp_get_wtime();
+    bubble_sort_odd_even(arr);
+    end = omp_get_wtime();
+
+    std::cout << "Sorted Array: ";
+    for (int i = 0; i < arr.size(); i++) {
+	std::cout << arr[i] << " ";
+    }
+        
+    std::cout << std::endl << "Parallel Bubble Sort using odd even transposition time: " << end - start << std::endl;
+
+    return 0;
+}
+
+Merge Sort
+#include <iostream>
+#include <stdlib.h>
+#include <omp.h>
+
+#define MAX 100
+
+void merge(int a[], int low, int high, int mid) {
+    int size = (high - low) + 1;
+    int i, j, k, temp[MAX];
+    i = low;
+    k = 0;
+    j = mid + 1;
+    
+    // Merge the two parts into temp[]
+    while (i <= mid && j <= high) {
+        if (a[i] < a[j]) {
+            temp[k] = a[i];
+            k++;
+            i++;
+        }
+        else {
+            temp[k] = a[j];
+            k++;
+            j++;
+        }
+    }
+
+// Insert all the remaining values from i to mid into temp[]
+    while (i <= mid) {
+        temp[k] = a[i];
+        k++;
+        i++;
+    }
+    
+    // Insert all the remaining values from j to high into temp[]
+    while (j <= high) {
+        temp[k] = a[j];
+        k++;
+        j++;
+    }
+    
+    // Assign sorted data stored in temp[] to a[]
+    for (i = low; i <= high; i++) {
+        a[i] = temp[i - low];
+    }
+}
+
+void mergesort(int a[], int l, int h) {
+    int mid;
+    if (l < h) {
+        mid = (l + h) / 2;
+	
+#pragma omp parallel sections
+        {
+#pragma omp section
+            {
+                mergesort(a, l, mid);
+            }
+	    
+#pragma omp section
+            {
+                mergesort(a, mid + 1, h);
+            }
+        }
+	merge(a, l, h, mid);
+    }
+}
+
+int main(void) {
+    int n = 9, i;
+    int arr[] = {5, 2, 9, 1, 7, 6, 8, 3, 4};
+
+    std::cout << "Unsorted Array: ";
+
+    for (i = 0; i < n; i++) {
+	std::cout << " " << arr[i];
+    }
+    double start = 0, end = 0;
+
+    start = omp_get_wtime();
+    mergesort(arr, 0, n - 1);
+    end = omp_get_wtime();
+
+    std::cout << std::endl<< "Sorted Array: ";
+
+    for (i = 0; i < n; i++) {
+	std::cout << " " << arr[i];
+    }
+    std::cout << std::endl << "Parallel Merge Sort Time: " << end - start << "\n";
+
+    return 0;
+}
+
+HPC Assignment - 03
+#include <iostream>
+#include <limits.h>
+#include <vector>
+#include <omp.h>
+
+void min_reduction(std::vector<int> &arr) {
+    int min_value = INT_MAX;
+
+#pragma omp parallel for reduction(min : min_value)
+    for (int i = 0; i < arr.size(); i++) {
+        if (arr[i] < min_value) {
+            min_value = arr[i];
+        }
+    }
+    std::cout << "Minimum value: " << min_value << std::endl;
+}
+
+void max_reduction(std::vector<int> &arr) {
+    int max_value = INT_MIN;
+    
+#pragma omp parallel for reduction(max : max_value)
+    for (int i = 0; i < arr.size(); i++) {
+        if (arr[i] > max_value) {
+            max_value = arr[i];
+        }
+    }
+    std::cout << "Maximum value: " << max_value << std::endl;
+}
+
+void sum_reduction(std::vector<int> &arr) {
+    int sum = 0;
+#pragma omp parallel for reduction(+ : sum)
+    for (int i = 0; i < arr.size(); i++) {
+        sum += arr[i];
+    }
+    std::cout << "Sum: " << sum << std::endl;
+}
+
+void average_reduction(std::vector<int> &arr) {
+    int sum = 0;
+    
+#pragma omp parallel for reduction(+ : sum)
+    for (int i = 0; i < arr.size(); i++) {
+        sum += arr[i];
+    }
+    std::cout << "Average: " << (double)sum / arr.size() << std::endl;
+}
+
+int main(int argc, char** argv) {
+    std::vector<int> arr = {5, 2, 9, 1, 7, 6, 8, 3, 4};
+
+    min_reduction(arr);
+    max_reduction(arr);
+    sum_reduction(arr);
+    average_reduction(arr);
+}
+
+

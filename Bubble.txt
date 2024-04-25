@@ -1,0 +1,47 @@
+HPC Assignment - 02
+Bubble Sort
+#include <iostream>
+#include <vector>
+#include <omp.h>
+
+void bubble_sort_odd_even(std::vector<int> &arr) {
+    bool isSorted = false;
+    while (!isSorted) {
+        isSorted = true;
+
+#pragma omp parallel for
+        for (int i = 0; i < arr.size() - 1; i += 2) {
+            if (arr[i] > arr[i + 1]) {
+		std::swap(arr[i], arr[i + 1]);
+                isSorted = false;
+            }
+        }
+
+#pragma omp parallel for
+        for (int i = 1; i < arr.size() - 1; i += 2) {
+            if (arr[i] > arr[i + 1]) {
+		std::swap(arr[i], arr[i + 1]);
+                isSorted = false;
+            }
+        }
+    }
+}
+
+int main(void) {
+    std::vector<int> arr = {5, 2, 9, 1, 7, 6, 8, 3, 4};
+    double start = 0, end = 0;
+    
+    // Measure performance of parallel bubble sort using odd even transposition
+    start = omp_get_wtime();
+    bubble_sort_odd_even(arr);
+    end = omp_get_wtime();
+
+    std::cout << "Sorted Array: ";
+    for (int i = 0; i < arr.size(); i++) {
+	std::cout << arr[i] << " ";
+    }
+        
+    std::cout << std::endl << "Parallel Bubble Sort using odd even transposition time: " << end - start << std::endl;
+
+    return 0;
+}

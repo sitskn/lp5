@@ -1,0 +1,93 @@
+Merge Sort
+#include <iostream>
+#include <stdlib.h>
+#include <omp.h>
+
+#define MAX 100
+
+void merge(int a[], int low, int high, int mid) {
+    int size = (high - low) + 1;
+    int i, j, k, temp[MAX];
+    i = low;
+    k = 0;
+    j = mid + 1;
+    
+    // Merge the two parts into temp[]
+    while (i <= mid && j <= high) {
+        if (a[i] < a[j]) {
+            temp[k] = a[i];
+            k++;
+            i++;
+        }
+        else {
+            temp[k] = a[j];
+            k++;
+            j++;
+        }
+    }
+
+// Insert all the remaining values from i to mid into temp[]
+    while (i <= mid) {
+        temp[k] = a[i];
+        k++;
+        i++;
+    }
+    
+    // Insert all the remaining values from j to high into temp[]
+    while (j <= high) {
+        temp[k] = a[j];
+        k++;
+        j++;
+    }
+    
+    // Assign sorted data stored in temp[] to a[]
+    for (i = low; i <= high; i++) {
+        a[i] = temp[i - low];
+    }
+}
+
+void mergesort(int a[], int l, int h) {
+    int mid;
+    if (l < h) {
+        mid = (l + h) / 2;
+	
+#pragma omp parallel sections
+        {
+#pragma omp section
+            {
+                mergesort(a, l, mid);
+            }
+	    
+#pragma omp section
+            {
+                mergesort(a, mid + 1, h);
+            }
+        }
+	merge(a, l, h, mid);
+    }
+}
+
+int main(void) {
+    int n = 9, i;
+    int arr[] = {5, 2, 9, 1, 7, 6, 8, 3, 4};
+
+    std::cout << "Unsorted Array: ";
+
+    for (i = 0; i < n; i++) {
+	std::cout << " " << arr[i];
+    }
+    double start = 0, end = 0;
+
+    start = omp_get_wtime();
+    mergesort(arr, 0, n - 1);
+    end = omp_get_wtime();
+
+    std::cout << std::endl<< "Sorted Array: ";
+
+    for (i = 0; i < n; i++) {
+	std::cout << " " << arr[i];
+    }
+    std::cout << std::endl << "Parallel Merge Sort Time: " << end - start << "\n";
+
+    return 0;
+}
